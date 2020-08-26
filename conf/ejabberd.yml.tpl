@@ -116,12 +116,6 @@ listen:
     {% endif %}
 
   -
-    port: 1883
-    ip: "::"
-    module: mod_mqtt
-    backlog: 1000    
-
-  -
     port: 4560
     module: ejabberd_xmlrpc
     access_commands:
