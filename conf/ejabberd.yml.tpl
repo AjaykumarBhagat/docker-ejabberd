@@ -274,11 +274,6 @@ max_fsm_queue: 70000
 acl:
   local:
     user_regexp: ""
-  loopback:
-    ip:
-      - 127.0.0.0/8
-      - ::1/128
-      - ::FFFF:127.0.0.1/128
   admin:
     user:
     {%- if env['EJABBERD_ADMINS'] %}
