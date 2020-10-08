@@ -149,6 +149,25 @@ anonymous_protocol: both
 allow_multiple_connections: true
 {%- endif %}
 
+## sql authentication
+
+{%- if 'sql' in env.get('EJABBERD_AUTH_METHOD', 'internal').split() %}
+
+sql_server:
+{%- for sql_server in env.get('EJABBERD_SQL_SERVERS', 'internal').split() %}
+  - "{{ sql_server }}"
+{%- endfor %}
+
+sql_type: {{ env.get('EJABBERD_SQL_type', 'pgsql') }}
+sql_database: {{ env.get('EJABBERD_SQL_DATABASE', 'ejabberddb') }}
+sql_username: {{ env.get('EJABBERD_SQL_USERNAME', 'postgres') }}
+sql_password: {{ env.get('EJABBERD_SQL_PASSWORD', 'postgres') }}
+sql_port: {{ env.get('EJABBERD_SQL_PORT', '5432') }}
+new_sql_schema: {{ env.get('EJABBERD_SQL_NEW_SCHEMA', 'true') }}
+default_db: {{ env.get('EJABBERD_SQL_DEFAULT_DB', 'sql') }}
+sql_pool_size: {{ env.get('EJABBERD_SQL_POOL_SIZE', '100') }}
+
+{%- endif %}
 
 ## LDAP authentication
 
