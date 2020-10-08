@@ -1,13 +1,18 @@
 ###
-###               ejabberd configuration file
+###              ejabberd configuration file
 ###
+### The parameters used in this configuration file are explained at
 ###
-
-### The parameters used in this configuration file are explained in more detail
-### in the ejabberd Installation and Operation Guide.
-### Please consult the Guide in case of doubts, it is included with
-### your copy of ejabberd, and is also available online at
-### http://www.process-one.net/en/ejabberd/docs/
+###       https://docs.ejabberd.im/admin/configuration
+###
+### The configuration file is written in YAML.
+### *******************************************************
+### *******           !!! WARNING !!!               *******
+### *******     YAML IS INDENTATION SENSITIVE       *******
+### ******* MAKE SURE YOU INDENT SECTIONS CORRECTLY *******
+### *******************************************************
+### Refer to http://en.wikipedia.org/wiki/YAML for the brief description.
+###
 
 ###   =======
 ###   LOGGING
@@ -54,7 +59,7 @@ listen:
     {%- if env.get('EJABBERD_PROTOCOL_OPTIONS_TLSV1_1', "true") == "false" %}
       - "no_tlsv1_1"
     {%- endif %}
-    max_stanza_size: 65536
+    max_stanza_size: 262144
     shaper: c2s_shaper
     access: c2s
     tls_compression: false
@@ -65,12 +70,29 @@ listen:
   -
     port: 5269
     module: ejabberd_s2s_in
+    max_stanza_size: 524288
+
   -
-    port: 4560
-    module: ejabberd_xmlrpc
-    access_commands:
-      configure:
-        all: []
+    port: 5443
+    module: ejabberd_http
+    request_handlers:
+      "": mod_http_upload
+    {%- if env['EJABBERD_HTTPS'] == "true" %}
+    tls: true
+    request_handlers:
+      "/admin": ejabberd_web_admin
+      "/api": mod_http_api
+      "/bosh": mod_bosh
+      "/captcha": ejabberd_captcha
+      "/upload": mod_http_upload
+      "/ws": ejabberd_http_ws
+      "/oauth": ejabberd_oauth
+    tls_compression: false
+    ciphers: "{{ env.get('EJABBERD_CIPHERS', 'HIGH:!aNULL:!3DES') }}"
+    {%- if env.get('EJABBERD_DHPARAM', false) == "true" %}
+    dhfile: "/opt/ejabberd/ssl/dh.dhpem"
+    {%- endif %}
+    {% endif %}
 
   -
     port: 5280
@@ -92,19 +114,14 @@ listen:
     dhfile: "/opt/ejabberd/ssl/dh.dhpem"
     {%- endif %}
     {% endif %}
+
   -
-    port: 5443
-    module: ejabberd_http
-    request_handlers:
-      "": mod_http_upload
-    {%- if env['EJABBERD_HTTPS'] == "true" %}
-    tls: true
-    tls_compression: false
-    ciphers: "{{ env.get('EJABBERD_CIPHERS', 'HIGH:!aNULL:!3DES') }}"
-    {%- if env.get('EJABBERD_DHPARAM', false) == "true" %}
-    dhfile: "/opt/ejabberd/ssl/dh.dhpem"
-    {%- endif %}
-    {% endif %}
+    port: 4560
+    module: ejabberd_xmlrpc
+    access_commands:
+      configure:
+        all: []    
+  
 
 
 ###   CERTIFICATES
@@ -148,6 +165,7 @@ auth_password_format: {{ env.get('EJABBERD_AUTH_PASSWORD_FORMAT', 'scram') }}
 anonymous_protocol: both
 allow_multiple_connections: true
 {%- endif %}
+
 
 ## sql authentication
 
@@ -240,14 +258,16 @@ extauth_cache: {{ env['EJABBERD_EXTAUTH_CACHE'] }}
 ###   TRAFFIC SHAPERS
 
 shaper:
-  normal: 1000
+  normal: 5000
   fast: 50000
-max_fsm_queue: 1000
+max_fsm_queue: 70000
 
 ###   ====================
 ###   ACCESS CONTROL LISTS
 
 acl:
+  local:
+    user_regexp: ""
   admin:
     user:
     {%- if env['EJABBERD_ADMINS'] %}
@@ -257,8 +277,7 @@ acl:
     {%- else %}
       - "admin": "{{ env['XMPP_DOMAIN'].split()[0] }}"
     {%- endif %}
-  local:
-    user_regexp: ""
+
 
 ###   ============
 ###   ACCESS RULES
@@ -371,6 +390,7 @@ modules:
     access_admin: muc_admin
     history_size: 50
     default_room_options:
+      allow_subscription: true
       persistent: true
       mam : true
   {%- if env['EJABBERD_MOD_MUC_ADMIN'] == "true" %}
@@ -398,45 +418,45 @@ modules:
     ## reduces resource comsumption, but XEP incompliant
     ignore_pep_from_offline: true
     ## XEP compliant, but increases resource comsumption
-    ignore_pep_from_offline: false
-    last_item_cache: true
+    ignore_pep_from_offline: true
+    last_item_cache: false
     plugins:
       - "flat"
       - "hometree"
       - "pep" # pep requires mod_caps
   mod_push: {}
   mod_push_keepalive: {}
-  mod_register:
-    {%- if env.get('EJABBERD_CAPTCHA', false) == "true" %}
-    ##
-    ## Protect In-Band account registrations with CAPTCHA.
-    ##
-    captcha_protected: true
-    {% endif %}
+  mod_register: {}
+    # {%- if env.get('EJABBERD_CAPTCHA', false) == "true" %}
+    # ##
+    # ## Protect In-Band account registrations with CAPTCHA.
+    # ##
+    # captcha_protected: true
+    # {% endif %}
 
-    ##
-    ## Set the minimum informational entropy for passwords.
-    ##
-    ## password_strength: 32
+    # ##
+    # ## Set the minimum informational entropy for passwords.
+    # ##
+    # ## password_strength: 32
 
-    ##
-    ## After successful registration, the user receives
-    ## a message with this subject and body.
-    ##
-    welcome_message:
-      subject: "Welcome!"
-      body: |-
-        Hi.
-        Welcome to this XMPP server.
+    # ##
+    # ## After successful registration, the user receives
+    # ## a message with this subject and body.
+    # ##
+    # welcome_message:
+    #   subject: "Welcome!"
+    #   body: |-
+    #     Hi.
+    #     Welcome to this XMPP server.
 
-    ##
-    ## Only clients in the server machine can register accounts
-    ##
-    {%- if env.get('EJABBERD_REGISTER_TRUSTED_NETWORK_ONLY', "true") == "true" %}
-    ip_access: trusted_network
-    {% endif %}
+    # ##
+    # ## Only clients in the server machine can register accounts
+    # ##
+    # {%- if env.get('EJABBERD_REGISTER_TRUSTED_NETWORK_ONLY', "true") == "true" %}
+    # ip_access: trusted_network
+    # {% endif %}
 
-    access: register
+    # access: register
   mod_roster:
     versioning: true
   mod_s2s_dialback: {}
