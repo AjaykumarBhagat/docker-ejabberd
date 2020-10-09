@@ -101,7 +101,7 @@
 #
 # Default: 1400
 #
-#ERL_MAX_ETS_TABLES=1400
+ERL_MAX_ETS_TABLES=2000000
 
 #.
 #' ERL_OPTIONS: Additional Erlang options
