@@ -88,7 +88,7 @@
 # Default: 250000
 # Maximum: 268435456
 #
-#ERL_PROCESSES=250000
+ERL_PROCESSES=26843545
 
 #.
 #' ERL_MAX_ETS_TABLES: Maximum number of ETS and Mnesia tables
